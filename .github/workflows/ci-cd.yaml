@@ -27,7 +27,7 @@ jobs:
 
   # --- JOB 2: CONTINUOUS DEPLOYMENT --
   deploy:
-    needs: build and push #This ensures deployment happens only if build succeed
+    needs: build-and-push #This ensures deployment happens only if build succeed
     runs-on: ubuntu-latest
     steps: 
       - name: Checkout Code
