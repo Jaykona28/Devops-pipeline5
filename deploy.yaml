@@ -1,0 +1,42 @@
+- name: Automated deployment via CI/CD
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    #Pull the username from the environment variable passed by Github actions
+    docker_user: "{{ lookup('env', 'DOCKER_USER') }}"
+    image_name: "{{ docker_user }}/lightweight-app:latest"
+    container_name: my-web-app
+
+  tasks:
+    - name: Ensure Docker is installed and running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull the latest Docker image
+      command: docker pull {{ image_name }}
+      register: pull_request
+      changed_when: "'Download newer image' in pull_result.stdout or 'Status: Image is up to date' not in pull_request.stdout"
+
+    - name: Stop existing container if running
+      command: docker stop {{ container_name }}
+      ignore_errors: yes
+      register: stop_result
+
+    - name: Remove existing container
+      command: docker rm {{ container_name }}
+      ignore_errors: yes
+      when: stop_result.rc == 0
+
+    - name: Run the new container with strict memory limits
+      command: >
+        docker run -d
+        --name {{ container_name }}
+        -p 8080:80
+        --memory="256m"
+        --cpus="0.5"
+        {{ image_name }}
+
+      
